@@ -137,4 +137,6 @@ FREERDP_API void wfreerdp_server_register_callback_event(cbCallback cb);
 
 void wfreerdp_server_peer_callback_event(int pId, UINT32 eType);
 
+FREERDP_API uint64_t wf_server_start(uint64_t port);
+FREERDP_API void wf_server_stop(uint64_t server);
 #endif /* FREERDP_SERVER_WIN_INTERFACE_H */

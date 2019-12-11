@@ -157,13 +157,20 @@ BOOL wfreerdp_server_start(wfServer* server)
 	server->instance->PeerAccepted = wf_peer_accepted;
 	instance = server->instance;
 
-	wf_settings_read_dword(HKEY_LOCAL_MACHINE, SERVER_KEY, _T("DefaultPort"), &server->port);
+	if (server->port == 0)
+		wf_settings_read_dword(HKEY_LOCAL_MACHINE, SERVER_KEY, _T("DefaultPort"), &server->port);
 
 	if (!instance->Open(instance, NULL, (UINT16)server->port))
+	{
+		WLog_ERR(TAG, "failed to open port%d", server->port);
 		return FALSE;
+	}
 
 	if (!(server->thread = CreateThread(NULL, 0, wf_server_main_loop, (void*)instance, 0, NULL)))
+	{
+		WLog_ERR(TAG, "CreateThread failed");
 		return FALSE;
+	}
 
 	return TRUE;
 }
@@ -351,4 +358,29 @@ void wfreerdp_server_peer_callback_event(int pId, UINT32 eType)
 {
 	if (cbEvent)
 		cbEvent(pId, eType);
+}
+
+uint64_t wf_server_start(uint64_t port)
+{
+	if (!(port > 1024 && port < 65535))
+	{
+		return 0;
+	}
+	wfServer* server = wfreerdp_server_new();
+	set_screen_id(0);
+	server->port = port;
+	BOOL ret = wfreerdp_server_start(server);
+	if (!ret)
+	{
+		WLog_ERR(TAG, "failed to start server on port:%d", port);
+		return 0;
+	}
+	return (uint64_t)server;
+}
+
+void wf_server_stop(uint64_t server)
+{
+	wfreerdp_server_stop((wfServer*)server);
+	wfreerdp_server_free((wfServer*)server);
+	WLog_INFO(TAG, "stopped rdp server");
 }
