@@ -108,6 +108,7 @@ struct wf_peer_context
 struct wf_server
 {
 	DWORD port;
+	char address[128];
 	HANDLE thread;
 	freerdp_listener* instance;
 };

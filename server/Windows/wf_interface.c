@@ -160,7 +160,10 @@ BOOL wfreerdp_server_start(wfServer* server)
 	if (server->port == 0)
 		wf_settings_read_dword(HKEY_LOCAL_MACHINE, SERVER_KEY, _T("DefaultPort"), &server->port);
 
-	if (!instance->Open(instance, NULL, (UINT16)server->port))
+	char* addr = server->address;
+	if (server->address[0] == '\0')
+		addr = NULL; //NULL pointer of address means listening on all IPs.
+	if (!instance->Open(instance, addr, (UINT16)server->port))
 	{
 		WLog_ERR(TAG, "failed to open port%d", server->port);
 		return FALSE;
@@ -360,15 +363,22 @@ void wfreerdp_server_peer_callback_event(int pId, UINT32 eType)
 		cbEvent(pId, eType);
 }
 
-uint64_t wf_server_start(uint64_t port)
+uint64_t wf_server_start(const char* address, uint64_t port)
 {
+	if (!address)
+	{
+		WLog_ERR(TAG, "error: null pointer for input address.");
+		return 0;
+	}
 	if (!(port > 1024 && port < 65535))
 	{
+		WLog_ERR(TAG, "error port range");
 		return 0;
 	}
 	wfServer* server = wfreerdp_server_new();
-	set_screen_id(0);
+	snprintf(server->address, sizeof(server->address), "%s", address);
 	server->port = port;
+	set_screen_id(0);
 	BOOL ret = wfreerdp_server_start(server);
 	if (!ret)
 	{
